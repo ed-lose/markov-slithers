@@ -1,0 +1,217 @@
+---
+title: "Markov chains: Snakes and Ladders"
+format:
+  html:
+    embed-resources: true
+    code-fold: true
+  gfm: default
+editor: visual
+---
+
+## Introduction
+
+```{r}
+#| include: false
+library(tidyverse)
+library(expm)
+```
+
+The classic Snakes and Ladders board game can be represented by an $n$ by $n$ Markov Chain
+
+## Running Code
+
+When you click the **Render** button a document will be generated that includes both content and the output of embedded code. You can embed code like this:
+
+```{r}
+# size of board
+n = 100
+
+# number of sides of dice
+d = 6
+
+ladders = list(c(6,23),c(8,30),c(13,47),c(20,39),c(33,70),
+               c(37,75),c(41,62),c(57,83),c(66,89),c(77,96))
+
+snakes = list(c(27,10),c(55,16),c(61,14),c(69,50),c(79,5),
+              c(81,44),c(87,31),c(91,25),c(95,49),c(97,59))
+
+#ladders = list()
+#snakes = list()
+
+board = matrix(0,n,n)
+
+# create simple board with no ladders
+for (i in 1:n) {
+  for (j in 0:min(n-i,d-1)) {
+    board[i,j+i] = 1/d 
+  } 
+}
+
+board = board %>%  
+  cbind(rep(0,n), .) %>% 
+  rbind(c(rep(0,n),1))
+
+#if n < d: start from 1+(d-n)
+#else start from 1
+board[,n+1][max(1,(n-(d-1))):n] = (max(1,1+d-n):d)/d
+
+rownames(board) = 0:(n)
+colnames(board) = 0:(n)
+
+delete = c()
+
+# add in ladders
+for (i in ladders) {
+  for (j in (i[1]-(d-1)):i[1]) {
+    board[j,][i[2]+1] = board[j,][i[2]+1] + 1/d
+  }
+  delete = c(delete, i[1])
+}
+
+# add in snakes
+for (i in snakes) {
+  for (j in (i[1]-(d-1)):i[1]) {
+    board[j,][i[2]+1] = board[j,][i[2]+1] + 1/d
+  }
+  delete = c(delete, i[1])
+}
+
+delete = delete+1
+
+board = board[-(delete),-(delete)]
+```
+
+You can add options to executable code like this
+
+```{r}
+
+# simulate discrete Markov chains according to transition matrix P
+simulatemc = function(tm) {
+  
+  # vector of states over time t
+  states = c()
+
+  # initialise variable for first state 
+  states[1] = 1
+  
+  t = 1
+  while (states[t] != nrow(tm)) {
+    t = t + 1
+    # probability vector to simulate next state X_{t+1}
+    p = tm[states[t-1], ]
+    
+    # draw from multinomial and determine state
+    states[t] <-  which(rmultinom(1, 1, p) == 1)
+  }
+  return(states)
+}
+
+```
+
+The `echo: false` option disables the printing of code (only output is displayed).
+
+```{r}
+
+avg = c()
+#lln = c()
+for (j in 1:100) {
+  run_time = c()
+  for (i in 1:100) {
+    run_time = c(run_time, length(simulatemc(board))-1)
+    #lln = c(lln, mean(run_time))
+  }
+  avg = c(avg, mean(run_time))
+}
+
+difference = c()
+for (i in snakes) {
+  difference = c(difference, i[1]-i[2])
+}
+difference
+
+difference = c()
+for (i in ladders) {
+  difference = c(difference, i[2]-i[1])
+}
+difference
+
+qqnorm(avg) 
+qqline(avg)
+t.test(avg, mu=47.98, alternative="two.sided")
+mean(run_time)
+sd(run_time)
+
+player1 = simulatemc(board)
+player2 = simulatemc(board)
+plot(player1, type='o', col='red', ylab="Position on board", xlab="Turns")
+lines(player2, type='o', col='blue')
+player1
+player2
+
+#plot(lln, type='l', ylim = c(45,55))
+#hist(run_time, breaks=50)
+
+plot(seq(20, 80, length=1000), dnorm(seq(20, 80, length=1000), mean=mean(run_time), sd=sd(run_time)), type="l", lwd=1)
+```
+
+```{r}
+# expected number of visits from transient state i to transient state j
+fundamental = solve(diag(nrow(board)-1) - board[1:(nrow(board)-1),1:(nrow(board)-1)])
+
+ex_steps = fundamental %*% matrix(1,nrow(board)-1,1) # expected number of steps to absorbing state from state i
+fundamental[1,] #expected number of visits to state i from the starting position
+
+(fundamental-diag(nrow(board)-1)) %*% solve(diag(diag(fundamental),nrow(board)-1,nrow(board)-1))
+
+plot(ex_steps, type="l")
+
+# test = data.frame(visits=fundamental[1,],row=paste("Row",1:10),col=paste("Col",rep(1:8,each=10)),pos=rownames(fundamental))
+
+test = data.frame(visits=fundamental[1,], pos=as.numeric(rownames(fundamental))) %>% 
+  complete(pos = seq(min(pos), max(pos)))
+
+for (i in ladders) {
+  test[test$pos==i[1],]$visits = test[test$pos==i[2],]$visits
+}
+
+for (i in snakes) {
+  test[test$pos==i[1],]$visits = test[test$pos==i[2],]$visits
+}
+
+test$row = rep(1:10,10)
+test$col = rep(1:10,each=10)
+
+ggplot(test, aes(x=row,y=col,fill=visits)) +
+  geom_tile() +
+  geom_text(aes(label=round(visits,3)), color="white")
+
+plot(test$visits,type="p")
+
+for (i in ladders) {
+  abline(v=i[1]+1, lty="dotted")
+}
+for (i in snakes) {
+  abline(v=i[1]+1, lty="dotted")
+}
+
+```
+
+```{r}
+states = 1:80
+
+#board[1:(nrow(board)-1),nrow(board)]
+
+init = c(1,rep(0,nrow(board)-2))
+prob = c()
+
+for (i in 1:(500)) {
+  num = matrix(init, nrow =1, ncol=nrow(board)-1) %*% (board[1:(nrow(board)-1),1:(nrow(board)-1)] %^% (i-1)) %*% board[1:(nrow(board)-1),nrow(board)]
+  prob = c(prob, as.numeric(num))
+}
+
+plot(prob, type="l")
+abline(v=48)
+sum(prob)
+
+#sum((1:length(prob))*prob)
+```
