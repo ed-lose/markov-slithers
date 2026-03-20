@@ -8,7 +8,7 @@ format:
 editor: visual
 ---
 
-## Introduction
+# The Rules
 
 ```{r}
 #| include: false
@@ -16,11 +16,15 @@ library(tidyverse)
 library(expm)
 ```
 
-The classic Snakes and Ladders board game can be represented by an $n$ by $n$ Markov Chain
+Snakes and Ladders is typically played with 2 players on an $n$ by $n$ grid. Each user takes turns rolling a 6-sided dice, gradually progressing up the board until they reach the final square. Along the way they can land on 'snakes', which takes them down to previous squares, or 'ladders', which takes them up closer to the end. 
+We will look at only the one player case with a few key differences:
 
-## Running Code
+1. The player will start on 'square 0' outside the board, not on square 1
+2. The player can overshoot the last square (e.g., if the player is 2 away from the end, they can roll 2 or above to win)
 
-When you click the **Render** button a document will be generated that includes both content and the output of embedded code. You can embed code like this:
+# Representing the board
+
+
 
 ```{r}
 # size of board
@@ -215,3 +219,13 @@ sum(prob)
 
 #sum((1:length(prob))*prob)
 ```
+
+
+# Appendix
+
+## Appendix A: Ladder and Snake positions
+
+Note: The first number indicates the entry point and the second number the exit point
+
+10 snakes: (27,10), (55,16), (61,14), (69,50), (79,5), (81,44), (87,31), (91,25), (95,49), (97,59)
+10 ladders: (6,23), (8,30), (13,47), (20,39), (33,70), (37,75), (41,62), (57,83), (66,89), (77,96)
