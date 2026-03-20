@@ -1,5 +1,6 @@
 ---
 title: "Markov chains: Snakes and Ladders"
+date: last-modified
 format:
   html:
     embed-resources: true
@@ -16,31 +17,41 @@ library(tidyverse)
 library(expm)
 ```
 
-Snakes and Ladders is typically played with 2 players on an $n$ by $n$ grid. Each user takes turns rolling a 6-sided dice, gradually progressing up the board until they reach the final square. Along the way they can land on 'snakes', which takes them down to previous squares, or 'ladders', which takes them up closer to the end. 
-We will look at only the one player case with a few key differences:
+[Snakes and Ladders](https://en.wikipedia.org/wiki/Snakes_and_ladders) is typically played with 2 players on an $n\times n$ grid. Each user takes turns rolling a 6-sided dice, gradually progressing up the board until they reach the final square. Along the way they can land on 'snakes', which takes them down to previous squares, or 'ladders', which takes them up closer to the end.
 
-1. The player will start on 'square 0' outside the board, not on square 1
-2. The player can overshoot the last square (e.g., if the player is 2 away from the end, they can roll 2 or above to win)
+We will look at the one player case with a few key differences:
+
+1.  The player will start on 'square 0' outside the board, not on square 1
+2.  The player can overshoot the last square (e.g., if the player is 2 away from the end, they can roll 2 or above to win)
 
 # Representing the board
 
+Using the board layout present in Daykin et al. (1967), the probability of going from state $i$ to state $j$ can be represented in a $101\times101$ transition matrix. While there are only 100 squares on the board, our version requires an initial 'zero' state.
 
+Let $p_{ij}$ be the probability of going from state $i$ to state $j$. Then:
+$$P=
+\begin{pmatrix}
+p_{00} & p_{01} & p_{02} & \cdots & p_{0\ 100}\\
+p_{10} & p_{11} & p_{12} & \cdots & p_{1\ 100}\\
+\vdots & \vdots & \vdots & \ddots & \vdots\\
+p_{100\ 0} & p_{100\ 1} & p_{100\ 2} & \cdots & p_{100\ 100}\\
+\end{pmatrix}$$
 
-```{r}
+Below are the first and last 5 rows of our matrix.
+
+```{r, board generation}
 # size of board
 n = 100
 
 # number of sides of dice
 d = 6
 
+# first number is the 'entry' square, second number is 'exit' square
 ladders = list(c(6,23),c(8,30),c(13,47),c(20,39),c(33,70),
                c(37,75),c(41,62),c(57,83),c(66,89),c(77,96))
 
 snakes = list(c(27,10),c(55,16),c(61,14),c(69,50),c(79,5),
               c(81,44),c(87,31),c(91,25),c(95,49),c(97,59))
-
-#ladders = list()
-#snakes = list()
 
 board = matrix(0,n,n)
 
@@ -51,17 +62,18 @@ for (i in 1:n) {
   } 
 }
 
+# add initial and absorbing state
 board = board %>%  
   cbind(rep(0,n), .) %>% 
   rbind(c(rep(0,n),1))
 
-#if n < d: start from 1+(d-n)
-#else start from 1
+# fill board with probabilities
 board[,n+1][max(1,(n-(d-1))):n] = (max(1,1+d-n):d)/d
 
 rownames(board) = 0:(n)
 colnames(board) = 0:(n)
 
+# vector of states to be deleted
 delete = c()
 
 # add in ladders
@@ -80,12 +92,14 @@ for (i in snakes) {
   delete = c(delete, i[1])
 }
 
-delete = delete+1
-
-board = board[-(delete),-(delete)]
+board = board[-(delete+1),-(delete+1)]
+knitr::kable(head(board), digits=3)
+knitr::kable(tail(board), digits=3)
 ```
 
-You can add options to executable code like this
+Note that some states are missing. This is because each ladder/snake reduces the number of possible states by one. Consider the snake beginning from square 97 to square 59. Landing on square 97 is equivalent to landing on square 59. Thus, the number of states is reduced by one. This holds true for ladders.
+
+Since there are a total of 20 snakes and ladders, this leaves us with a final $81\times81$ transition matrix. 
 
 ```{r}
 
@@ -220,6 +234,9 @@ sum(prob)
 #sum((1:length(prob))*prob)
 ```
 
+# References
+
+1.  Daykin, D. E., Jeacocke, J. E., & Neal, D. G. (1967). Markov Chains And Snakes And Ladders. The Mathematical Gazette, 51(378), 313–317. <https://doi.org/10.2307/3612943>
 
 # Appendix
 
@@ -228,4 +245,5 @@ sum(prob)
 Note: The first number indicates the entry point and the second number the exit point
 
 10 snakes: (27,10), (55,16), (61,14), (69,50), (79,5), (81,44), (87,31), (91,25), (95,49), (97,59)
+
 10 ladders: (6,23), (8,30), (13,47), (20,39), (33,70), (37,75), (41,62), (57,83), (66,89), (77,96)
