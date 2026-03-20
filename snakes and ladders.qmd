@@ -11,7 +11,7 @@ editor: visual
 
 # The Rules
 
-```{r}
+```{r, libraries}
 #| include: false
 library(tidyverse)
 library(expm)
@@ -116,7 +116,7 @@ This represents the number of expected visits from transient state $i$ to transi
 ```{r, expected number of turns}
 fundamental = solve(diag(nrow(board)-1) - board[1:(nrow(board)-1),1:(nrow(board)-1)])
 ex_steps = fundamental %*% matrix(1,nrow(board)-1,1)
-plot(ex_steps)
+plot(ex_steps, xlab="State", ylab="Expected steps to win", main="Number of turns to win based on state")
 head(ex_steps)
 ```
 
@@ -148,12 +148,11 @@ simulate.mc = function(tm) {
   return(states)
 }
 
-
 games = list()
 run_time = c()
 
 # for reproducibility
-#set.seed(123)
+set.seed(123)
 
 for (i in 1:20) {
   current_game = simulate.mc(board)
@@ -166,7 +165,7 @@ for (i in 1:20) {
 longest = which.max(run_time)
 shortest = which.min(run_time)
 
-plot(games[[longest]], type="l", col="red")
+plot(games[[longest]], type="l", col="red", xlab="Turns", ylab="State", main="20 simulated runs of Snakes and Ladders")
 lines(games[[shortest]], col="blue")
 for (i in 2:length(games)) {
   if (!(i == longest | i == shortest)) {
@@ -178,67 +177,39 @@ paste("Shortest game:", run_time[shortest], "turns")
 paste("Average game:", mean(run_time), "turns")
 ```
 
-Will the simulated average converge to our calculated theoretical value?
+Will the simulated average converge to our calculated theoretical value? Let us rerun the simulation 100 times, taking the average each time. We can then perform a one-sampled $t$-test where, $H_0:\mu=48.1$ and $H_1:\mu\ne48.1$.
 
-```{r}
+```{r, t.test}
 
-games = list()
-run_time = c()
+avg = c()
 
-for (i in 1:100000) {
-  current_game = simulate.mc(board)
-  
-  # remove 1 to account for starting turn
-  run_time = c(run_time, length(current_game)-1)
-  games[[i]] = current_game
+
+for (j in 1:100) {
+  run_time = c()
+  for (i in 1:100) {
+    current_game = simulate.mc(board)
+    
+    # remove 1 to account for starting turn
+    run_time = c(run_time, length(current_game)-1)
+  }
+  avg = c(avg, mean(run_time))
 }
 
-longest = which.max(run_time)
-shortest = which.min(run_time)
-
-paste("Longest game:", run_time[longest], "turns")
-paste("Shortest game:", run_time[shortest], "turns")
-paste("Average game:", mean(run_time), "turns")
+t.test(avg, mu=48.1,alternative="two.sided")
 ```
 
 
 ```{r}
 
-avg = c()
-#lln = c()
-for (j in 1:100) {
-  run_time = c()
-  for (i in 1:100) {
-    run_time = c(run_time, length(simulate.mc(board))-1)
-    #lln = c(lln, mean(run_time))
-  }
-  avg = c(avg, mean(run_time))
-}
 
-difference = c()
-for (i in snakes) {
-  difference = c(difference, i[1]-i[2])
-}
-difference
-
-difference = c()
-for (i in ladders) {
-  difference = c(difference, i[2]-i[1])
-}
-difference
 
 qqnorm(avg) 
 qqline(avg)
-t.test(avg, mu=47.98, alternative="two.sided")
+t.test(mean(run_time), mu=47.98, alternative="two.sided")
 mean(run_time)
 sd(run_time)
 
-player1 = simulatemc(board)
-player2 = simulatemc(board)
-plot(player1, type='o', col='red', ylab="Position on board", xlab="Turns")
-lines(player2, type='o', col='blue')
-player1
-player2
+
 
 #plot(lln, type='l', ylim = c(45,55))
 #hist(run_time, breaks=50)
@@ -321,3 +292,28 @@ Note: The first number indicates the entry point and the second number the exit 
 10 snakes: (27,10), (55,16), (61,14), (69,50), (79,5), (81,44), (87,31), (91,25), (95,49), (97,59)
 
 10 ladders: (6,23), (8,30), (13,47), (20,39), (33,70), (37,75), (41,62), (57,83), (66,89), (77,96)
+
+```{r}
+#| eval: false
+#| include: false
+
+# difference = c()
+# for (i in snakes) {
+#   difference = c(difference, i[1]-i[2])
+# }
+# difference
+# 
+# difference = c()
+# for (i in ladders) {
+#   difference = c(difference, i[2]-i[1])
+# }
+# difference
+# 
+# player1 = simulate.mc(board)
+# player2 = simulate.mc(board)
+# plot(player1, type='o', col='red', ylab="Position on board", xlab="Turns")
+# lines(player2, type='o', col='blue')
+# player1
+# player2
+```
+
