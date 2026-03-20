@@ -28,8 +28,7 @@ We will look at the one player case with a few key differences:
 
 Using the board layout present in Daykin et al. (1967), the probability of going from state $i$ to state $j$ can be represented in a $101\times101$ transition matrix. While there are only 100 squares on the board, our version requires an initial 'zero' state.
 
-Let $p_{ij}$ be the probability of going from state $i$ to state $j$. Then:
-$$P=
+Let $p_{ij}$ be the probability of going from state $i$ to state $j$. Then: $$P=
 \begin{pmatrix}
 p_{00} & p_{01} & p_{02} & \cdots & p_{0\ 100}\\
 p_{10} & p_{11} & p_{12} & \cdots & p_{1\ 100}\\
@@ -97,9 +96,29 @@ knitr::kable(head(board), digits=3)
 knitr::kable(tail(board), digits=3)
 ```
 
-Note that some states are missing. This is because each ladder/snake reduces the number of possible states by one. Consider the snake beginning from square 97 to square 59. Landing on square 97 is equivalent to landing on square 59. Thus, the number of states is reduced by one. This holds true for ladders.
+Note that some states are missing. This is because each ladder/snake reduces the number of possible states by one.
 
-Since there are a total of 20 snakes and ladders, this leaves us with a final $81\times81$ transition matrix. 
+Consider the snake beginning from square 97 to square 59. Landing on square 97 is equivalent to landing on square 59. Thus, the number of states is reduced by one. This holds true for ladders.
+
+Since there are a total of 20 snakes and ladders, this leaves us with a final $81\times81$ transition matrix.
+
+# Expected number of turns to finish
+
+Since our chain constitutes an absorbing Markov chain, we have the canonical form of a transition matrix:
+$$P=\begin{bmatrix}
+Q & R\\
+0 & I\\
+\end{bmatrix}$$
+From this, we can get the fundamental matrix, $N$ given by:
+$$N=(I-Q)^{-1}$$
+This represents the number of expected visits from transient state $i$ to transient state $j$. To get the expected absorbing time (or time to finish),$t$ , we multiply the fundamental matrix by a column vector of 1s like so $t=N1$
+
+```{r}
+fundamental = solve(diag(nrow(board)-1) - board[1:(nrow(board)-1),1:(nrow(board)-1)])
+ex_steps = fundamental %*% matrix(1,nrow(board)-1,1)
+plot(ex_steps)
+```
+
 
 ```{r}
 
