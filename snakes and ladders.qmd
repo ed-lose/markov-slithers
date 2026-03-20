@@ -113,17 +113,22 @@ From this, we can get the fundamental matrix, $N$ given by:
 $$N=(I-Q)^{-1}$$
 This represents the number of expected visits from transient state $i$ to transient state $j$. To get the expected absorbing time (or time to finish),$t$ , we multiply the fundamental matrix by a column vector of 1s like so $t=N1$
 
-```{r}
+```{r, expected number of turns}
 fundamental = solve(diag(nrow(board)-1) - board[1:(nrow(board)-1),1:(nrow(board)-1)])
 ex_steps = fundamental %*% matrix(1,nrow(board)-1,1)
 plot(ex_steps)
+head(ex_steps)
 ```
 
+Therefore, on average, it would take around `{r}round(ex_steps[1],2)` turns to win. If we were to start on square 1, it would take `{r}round(ex_steps[2],2)` turns to win and so on.
 
-```{r}
+# Simulating games
 
+Let us simulate a few games of Snakes and Ladders. I've highlighted the shortest game blue and the longest game red.
+
+```{r, simulation}
 # simulate discrete Markov chains according to transition matrix P
-simulatemc = function(tm) {
+simulate.mc = function(tm) {
   
   # vector of states over time t
   states = c()
@@ -143,9 +148,59 @@ simulatemc = function(tm) {
   return(states)
 }
 
+
+games = list()
+run_time = c()
+
+# for reproducibility
+#set.seed(123)
+
+for (i in 1:20) {
+  current_game = simulate.mc(board)
+  
+  # remove 1 to account for starting turn
+  run_time = c(run_time, length(current_game)-1)
+  games[[i]] = current_game
+}
+
+longest = which.max(run_time)
+shortest = which.min(run_time)
+
+plot(games[[longest]], type="l", col="red")
+lines(games[[shortest]], col="blue")
+for (i in 2:length(games)) {
+  if (!(i == longest | i == shortest)) {
+    lines(games[[i]], col=alpha("black",0.1))
+  }
+}
+paste("Longest game:", run_time[longest], "turns")
+paste("Shortest game:", run_time[shortest], "turns")
+paste("Average game:", mean(run_time), "turns")
 ```
 
-The `echo: false` option disables the printing of code (only output is displayed).
+Will the simulated average converge to our calculated theoretical value?
+
+```{r}
+
+games = list()
+run_time = c()
+
+for (i in 1:100000) {
+  current_game = simulate.mc(board)
+  
+  # remove 1 to account for starting turn
+  run_time = c(run_time, length(current_game)-1)
+  games[[i]] = current_game
+}
+
+longest = which.max(run_time)
+shortest = which.min(run_time)
+
+paste("Longest game:", run_time[longest], "turns")
+paste("Shortest game:", run_time[shortest], "turns")
+paste("Average game:", mean(run_time), "turns")
+```
+
 
 ```{r}
 
@@ -154,7 +209,7 @@ avg = c()
 for (j in 1:100) {
   run_time = c()
   for (i in 1:100) {
-    run_time = c(run_time, length(simulatemc(board))-1)
+    run_time = c(run_time, length(simulate.mc(board))-1)
     #lln = c(lln, mean(run_time))
   }
   avg = c(avg, mean(run_time))
