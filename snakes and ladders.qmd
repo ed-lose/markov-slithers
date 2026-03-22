@@ -1,5 +1,6 @@
 ---
 title: "Markov chains: Snakes and Ladders"
+author: Edwin Wang
 date: last-modified
 format:
   html:
@@ -27,7 +28,7 @@ We will look at the one player case with a few key differences:
 
 # Representing the board
 
-Using the board layout present in Daykin et al. (1967), the probability of going from state $i$ to state $j$ can be represented in a $101\times101$ transition matrix. While there are only 100 squares on the board, our version requires an initial 'zero' state.
+Using the board layout from Daykin et al. (1967), the probability of going from state $i$ to state $j$ can be represented in a $101\times101$ transition matrix. While there are only 100 squares on the board, our version requires an initial 'zero' state.
 
 Let $p_{ij}$ be the probability of going from state $i$ to state $j$. Then: $$P=
 \begin{pmatrix}
@@ -93,8 +94,8 @@ for (i in snakes) {
 }
 
 board = board[-(delete+1),-(delete+1)]
-knitr::kable(head(board), digits=3)
-knitr::kable(tail(board), digits=3)
+knitr::kable(head(board)[,1:10], digits=3)
+knitr::kable(tail(board)[,71:81], digits=3)
 ```
 
 Note that some states are missing. This is because each ladder/snake reduces the number of possible states by one.
