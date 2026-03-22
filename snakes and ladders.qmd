@@ -13,6 +13,7 @@ editor: visual
 
 ```{r, libraries}
 #| include: false
+options(scipen = 10)
 library(tidyverse)
 library(expm)
 ```
@@ -152,7 +153,7 @@ games = list()
 run_time = c()
 
 # for reproducibility
-set.seed(123)
+set.seed(1984)
 
 for (i in 1:20) {
   current_game = simulate.mc(board)
@@ -177,45 +178,31 @@ paste("Shortest game:", run_time[shortest], "turns")
 paste("Average game:", mean(run_time), "turns")
 ```
 
-Will the simulated average converge to our calculated theoretical value? Let us rerun the simulation 100 times, taking the average each time. We can then perform a one-sampled $t$-test where, $H_0:\mu=48.1$ and $H_1:\mu\ne48.1$.
+Will the simulated average converge to our calculated theoretical value? According to the Law of Large numbers, repeating the simulated trials over a large number of samples should cause our mean to converge to the true value (marked by the red dotted line).
 
 ```{r, t.test}
+#| cache: true
 
-avg = c()
+trials = 100000
 
+run_time = numeric(trials)
+avg = numeric(trials)
 
-for (j in 1:100) {
-  run_time = c()
-  for (i in 1:100) {
-    current_game = simulate.mc(board)
+for (i in 1:trials) {
+  current_game = simulate.mc(board)
     
-    # remove 1 to account for starting turn
-    run_time = c(run_time, length(current_game)-1)
-  }
-  avg = c(avg, mean(run_time))
+  # remove 1 to account for starting turn
+  run_time[i] = length(current_game)-1
+  avg[i] = mean(run_time[1:i])
 }
 
-t.test(avg, mu=48.1,alternative="two.sided")
+plot(avg, type="l", ylim=c(47,49), xlim=c(5000,100000), xlab="Number of trials", ylab="Mean steps to finish", main="Average time to finish by number of trials")
+abline(h=ex_steps[1], lty=2, col="red")
+
+paste("Longest game:", max(run_time), "turns")
+paste("Average game:", mean(run_time), "turns")
 ```
 
-
-```{r}
-
-
-
-qqnorm(avg) 
-qqline(avg)
-t.test(mean(run_time), mu=47.98, alternative="two.sided")
-mean(run_time)
-sd(run_time)
-
-
-
-#plot(lln, type='l', ylim = c(45,55))
-#hist(run_time, breaks=50)
-
-plot(seq(20, 80, length=1000), dnorm(seq(20, 80, length=1000), mean=mean(run_time), sd=sd(run_time)), type="l", lwd=1)
-```
 
 ```{r}
 # expected number of visits from transient state i to transient state j
@@ -225,8 +212,6 @@ ex_steps = fundamental %*% matrix(1,nrow(board)-1,1) # expected number of steps 
 fundamental[1,] #expected number of visits to state i from the starting position
 
 (fundamental-diag(nrow(board)-1)) %*% solve(diag(diag(fundamental),nrow(board)-1,nrow(board)-1))
-
-plot(ex_steps, type="l")
 
 # test = data.frame(visits=fundamental[1,],row=paste("Row",1:10),col=paste("Col",rep(1:8,each=10)),pos=rownames(fundamental))
 
