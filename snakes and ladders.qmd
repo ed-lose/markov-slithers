@@ -31,7 +31,9 @@ We will look at the one player case with a few key differences:
 
 Using the board layout from Daykin et al. (1967), the probability of going from state $i$ to state $j$ can be represented in a $101\times101$ transition matrix. While there are only 100 squares on the board, our version requires an initial 'zero' state.
 
-Let $p_{ij}$ be the probability of going from state $i$ to state $j$. Then: $$P=
+Let $p_{ij}$ be the probability of going from state $i$ to state $j$. Then:
+
+$$P=
 \begin{pmatrix}
 p_{00} & p_{01} & p_{02} & \cdots & p_{0\ 100}\\
 p_{10} & p_{11} & p_{12} & \cdots & p_{1\ 100}\\
@@ -105,10 +107,18 @@ Since there are a total of 20 snakes and ladders, this leaves us with a final $8
 
 # Expected number of turns to finish
 
-Since our chain constitutes an absorbing Markov chain, we have the canonical form of a transition matrix: $$P=\begin{bmatrix}
+Since our chain constitutes an absorbing Markov chain, we have the canonical form of a transition matrix: 
+
+$$P=\begin{bmatrix}
 Q & R\\
 0 & I\\
-\end{bmatrix}$$ From this, we can get the fundamental matrix, $N$ given by: $$N=(I-Q)^{-1}$$ This represents the number of expected visits from transient state $i$ to transient state $j$. To get the expected absorbing time (or time to finish) $t$ , we multiply the fundamental matrix by a column vector of 1s like so $t=N1$
+\end{bmatrix}$$
+
+From this, we can get the fundamental matrix, $N$ given by:
+
+$$N=(I-Q)^{-1}$$
+
+This represents the number of expected visits from transient state $i$ to transient state $j$. To get the expected absorbing time (or time to finish) $t$ , we multiply the fundamental matrix by a column vector of 1s like so $t=N1$
 
 ```{r, expected number of turns}
 # expected number of visits from transient state i to transient state j

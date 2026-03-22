@@ -38,7 +38,9 @@ transition matrix. While there are only 100 squares on the board, our
 version requires an initial ‘zero’ state.
 
 Let $p_{ij}$ be the probability of going from state $i$ to state $j$.
-Then: $$P=
+Then:
+
+$$P=
 \begin{pmatrix}
 p_{00} & p_{01} & p_{02} & \cdots & p_{0\ 100}\\
 p_{10} & p_{11} & p_{12} & \cdots & p_{1\ 100}\\
@@ -140,14 +142,21 @@ final $81\times81$ transition matrix.
 # Expected number of turns to finish
 
 Since our chain constitutes an absorbing Markov chain, we have the
-canonical form of a transition matrix: $$P=\begin{bmatrix}
+canonical form of a transition matrix:
+
+$$P=\begin{bmatrix}
 Q & R\\
 0 & I\\
-\end{bmatrix}$$ From this, we can get the fundamental matrix, $N$ given
-by: $$N=(I-Q)^{-1}$$ This represents the number of expected visits from
-transient state $i$ to transient state $j$. To get the expected
-absorbing time (or time to finish) $t$ , we multiply the fundamental
-matrix by a column vector of 1s like so $t=N1$
+\end{bmatrix}$$
+
+From this, we can get the fundamental matrix, $N$ given by:
+
+$$N=(I-Q)^{-1}$$
+
+This represents the number of expected visits from transient state $i$
+to transient state $j$. To get the expected absorbing time (or time to
+finish) $t$ , we multiply the fundamental matrix by a column vector of
+1s like so $t=N1$
 
 ``` r
 # expected number of visits from transient state i to transient state j
@@ -318,10 +327,6 @@ ggplot(ex_visits, aes(x=row,y=col,fill=visits)) +
 ```
 
 ![](snakes-and-ladders_files/figure-commonmark/grid%20plot-1.png)
-
-``` r
-#fundamental[1,]
-```
 
 We can see squares with either ladders or snakes on them have higher
 number of average visits such as squares 16 (6,2) and 55 (5,6), and
