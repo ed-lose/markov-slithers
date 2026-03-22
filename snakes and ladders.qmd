@@ -105,18 +105,19 @@ Since there are a total of 20 snakes and ladders, this leaves us with a final $8
 
 # Expected number of turns to finish
 
-Since our chain constitutes an absorbing Markov chain, we have the canonical form of a transition matrix:
-$$P=\begin{bmatrix}
+Since our chain constitutes an absorbing Markov chain, we have the canonical form of a transition matrix: $$P=\begin{bmatrix}
 Q & R\\
 0 & I\\
-\end{bmatrix}$$
-From this, we can get the fundamental matrix, $N$ given by:
-$$N=(I-Q)^{-1}$$
-This represents the number of expected visits from transient state $i$ to transient state $j$. To get the expected absorbing time (or time to finish),$t$ , we multiply the fundamental matrix by a column vector of 1s like so $t=N1$
+\end{bmatrix}$$ From this, we can get the fundamental matrix, $N$ given by: $$N=(I-Q)^{-1}$$ This represents the number of expected visits from transient state $i$ to transient state $j$. To get the expected absorbing time (or time to finish) $t$ , we multiply the fundamental matrix by a column vector of 1s like so $t=N1$
 
 ```{r, expected number of turns}
+# expected number of visits from transient state i to transient state j
 fundamental = solve(diag(nrow(board)-1) - board[1:(nrow(board)-1),1:(nrow(board)-1)])
+
+# expected number of steps to absorbing state from state i
 ex_steps = fundamental %*% matrix(1,nrow(board)-1,1)
+
+
 plot(ex_steps, xlab="State", ylab="Expected steps to win", main="Number of turns to win based on state")
 head(ex_steps)
 ```
@@ -174,13 +175,12 @@ for (i in 2:length(games)) {
   }
 }
 paste("Longest game:", run_time[longest], "turns")
-paste("Shortest game:", run_time[shortest], "turns")
 paste("Average game:", mean(run_time), "turns")
 ```
 
-Will the simulated average converge to our calculated theoretical value? According to the Law of Large numbers, repeating the simulated trials over a large number of samples should cause our mean to converge to the true value (marked by the red dotted line).
+Will the simulated average converge to our calculated theoretical value? According to the Law of Large numbers, repeating the simulation across a large number of trials should make the mean converge to the true value (indicated by the red dotted line).
 
-```{r, t.test}
+```{r, lln}
 #| cache: true
 
 trials = 100000
@@ -196,73 +196,48 @@ for (i in 1:trials) {
   avg[i] = mean(run_time[1:i])
 }
 
-plot(avg, type="l", ylim=c(47,49), xlim=c(5000,100000), xlab="Number of trials", ylab="Mean steps to finish", main="Average time to finish by number of trials")
+plot(avg, type="l", ylim=c(47,49), xlim=c(5000,100000), xlab="Number of trials", ylab="Mean steps to finish", main="Average time to finish by number of trials (n = 100000)")
 abline(h=ex_steps[1], lty=2, col="red")
 
 paste("Longest game:", max(run_time), "turns")
 paste("Average game:", mean(run_time), "turns")
 ```
 
+# Other visualisations
 
-```{r}
-# expected number of visits from transient state i to transient state j
-fundamental = solve(diag(nrow(board)-1) - board[1:(nrow(board)-1),1:(nrow(board)-1)])
+## Heat map
 
-ex_steps = fundamental %*% matrix(1,nrow(board)-1,1) # expected number of steps to absorbing state from state i
-fundamental[1,] #expected number of visits to state i from the starting position
+We can visualise the expected number of visits to each state as a heat map. Note, the bottom left tile represents square 1 and the top right tile represents square 100, increasing from left to right (e.g., the tile with coordinates (10,1) represents square 10, (1,2) represents square 11, (2,2) square 12, etc...). I have also added back in the missing squares for better interpretability.
 
-(fundamental-diag(nrow(board)-1)) %*% solve(diag(diag(fundamental),nrow(board)-1,nrow(board)-1))
+```{r, grid plot}
 
-# test = data.frame(visits=fundamental[1,],row=paste("Row",1:10),col=paste("Col",rep(1:8,each=10)),pos=rownames(fundamental))
-
-test = data.frame(visits=fundamental[1,], pos=as.numeric(rownames(fundamental))) %>% 
+ex_visits = data.frame(visits=fundamental[1,], pos=as.numeric(rownames(fundamental))) %>% 
   complete(pos = seq(min(pos), max(pos)))
+ex_visits[1,1] = 100
 
 for (i in ladders) {
-  test[test$pos==i[1],]$visits = test[test$pos==i[2],]$visits
+  ex_visits[ex_visits$pos==i[1],]$visits = ex_visits[ex_visits$pos==i[2],]$visits
 }
 
 for (i in snakes) {
-  test[test$pos==i[1],]$visits = test[test$pos==i[2],]$visits
+  ex_visits[ex_visits$pos==i[1],]$visits = ex_visits[ex_visits$pos==i[2],]$visits
 }
 
-test$row = rep(1:10,10)
-test$col = rep(1:10,each=10)
+ex_visits = ex_visits[order(ex_visits$pos),]
+ex_visits$row = as.factor(rep(1:10,10))
+ex_visits$col = as.factor(rep(1:10,each=10))
 
-ggplot(test, aes(x=row,y=col,fill=visits)) +
+ggplot(ex_visits, aes(x=row,y=col,fill=visits)) +
   geom_tile() +
-  geom_text(aes(label=round(visits,3)), color="white")
+  geom_text(aes(label=round(visits,2)), color="white") +
+  theme(axis.title = element_blank()) +
+  labs(title = "Expected number of visits for each square",
+       fill = "Visits")
 
-plot(test$visits,type="p")
-
-for (i in ladders) {
-  abline(v=i[1]+1, lty="dotted")
-}
-for (i in snakes) {
-  abline(v=i[1]+1, lty="dotted")
-}
-
+#fundamental[1,]
 ```
 
-```{r}
-states = 1:80
-
-#board[1:(nrow(board)-1),nrow(board)]
-
-init = c(1,rep(0,nrow(board)-2))
-prob = c()
-
-for (i in 1:(500)) {
-  num = matrix(init, nrow =1, ncol=nrow(board)-1) %*% (board[1:(nrow(board)-1),1:(nrow(board)-1)] %^% (i-1)) %*% board[1:(nrow(board)-1),nrow(board)]
-  prob = c(prob, as.numeric(num))
-}
-
-plot(prob, type="l")
-abline(v=48)
-sum(prob)
-
-#sum((1:length(prob))*prob)
-```
+We can see squares with either ladders or snakes on them have higher number of average visits such as squares 16 (6,2) and 55 (5,6), and squares 69 (9,7) and 50 (10,5).
 
 # References
 
@@ -300,5 +275,24 @@ Note: The first number indicates the entry point and the second number the exit 
 # lines(player2, type='o', col='blue')
 # player1
 # player2
-```
 
+
+
+# states = 1:80
+
+#board[1:(nrow(board)-1),nrow(board)]
+
+# init = c(1,rep(0,nrow(board)-2))
+# prob = c()
+# 
+# for (i in 1:(500)) {
+#   num = matrix(init, nrow =1, ncol=nrow(board)-1) %*% (board[1:(nrow(board)-1),1:(nrow(board)-1)] %^% (i-1)) %*% board[1:(nrow(board)-1),nrow(board)]
+#   prob = c(prob, as.numeric(num))
+# }
+# 
+# plot(prob, type="l")
+# abline(v=48)
+# sum(prob)
+
+#sum((1:length(prob))*prob)
+```
