@@ -234,7 +234,6 @@ ggplot(ex_visits, aes(x=row,y=col,fill=visits)) +
   labs(title = "Expected number of visits for each square",
        fill = "Visits")
 
-#fundamental[1,]
 ```
 
 We can see squares with either ladders or snakes on them have higher number of average visits such as squares 16 (6,2) and 55 (5,6), and squares 69 (9,7) and 50 (10,5).
